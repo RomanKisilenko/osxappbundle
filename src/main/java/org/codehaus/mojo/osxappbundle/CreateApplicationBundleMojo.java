@@ -17,6 +17,10 @@ package org.codehaus.mojo.osxappbundle;
  */
 
 
+import java.io.*;
+import java.nio.file.*;
+import java.nio.file.attribute.FileAttribute;
+import java.util.*;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.layout.ArtifactRepositoryLayout;
 import org.apache.maven.artifact.repository.layout.DefaultRepositoryLayout;
@@ -25,9 +29,8 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectHelper;
 import org.apache.velocity.VelocityContext;
-import org.apache.velocity.exception.MethodInvocationException;
-import org.apache.velocity.exception.ParseErrorException;
-import org.apache.velocity.exception.ResourceNotFoundException;
+import org.apache.velocity.exception.*;
+import org.codehaus.mojo.osxappbundle.encoding.DefaultEncodingDetector;
 import org.codehaus.plexus.archiver.ArchiverException;
 import org.codehaus.plexus.archiver.zip.ZipArchiver;
 import org.codehaus.plexus.util.DirectoryScanner;
@@ -35,21 +38,6 @@ import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.cli.CommandLineException;
 import org.codehaus.plexus.util.cli.Commandline;
 import org.codehaus.plexus.velocity.VelocityComponent;
-import org.codehaus.mojo.osxappbundle.encoding.DefaultEncodingDetector;
-
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.io.ByteArrayInputStream;
-import java.io.Writer;
-import java.io.OutputStreamWriter;
-import java.io.FileOutputStream;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.Arrays;
 
 /**
  * Package dependencies as an Application Bundle for Mac OS X.
@@ -161,7 +149,22 @@ public class CreateApplicationBundleMojo
      * @parameter
      */
     private List additionalResources;
+    
+    /**
+     * Additional resources (as a list of CopyElement objects) that will be copies into
+     * the build directory to destanation path and included in the .dmg and zip files alongside with the
+     * application bundle.
+     *
+     *@parameter
+     */
+    private List copyElements;
 
+    /**
+     * Determine create or not symbolic link for "Applications" folder and put it into DMG and ZIP archive. 
+     * @parameter
+     */
+    private Boolean createApplicationSymbolicLink;
+    
     /**
      * Velocity Component.
      *
@@ -293,6 +296,12 @@ public class CreateApplicationBundleMojo
             copyResources( additionalResources );
         }
 
+		if (copyElements != null && !copyElements.isEmpty())
+			copyElements();
+		
+		if(createApplicationSymbolicLink!=null &&createApplicationSymbolicLink.equals(Boolean.TRUE) && isOsX())
+			createApplicationSymbolicLink();
+        
         if ( isOsX() )
         {
             // Make the stub executable
@@ -371,18 +380,22 @@ public class CreateApplicationBundleMojo
             projectHelper.attachArtifact(project, "dmg", null, diskImageFile);
         }
 
+		if (createApplicationSymbolicLink != null && createApplicationSymbolicLink.equals(Boolean.TRUE))
+			removeApplicationLink();
+        
         zipArchiver.setDestFile( zipFile );
         try
         {
             String[] stubPattern = {buildDirectory.getName() + "/" + bundleDir.getName() +"/Contents/MacOS/"
                                     + javaApplicationStub.getName()};
+            
 
             zipArchiver.addDirectory( buildDirectory.getParentFile(), new String[]{buildDirectory.getName() + "/**"},
-                    stubPattern);
+            		stubPattern);
 
             DirectoryScanner scanner = new DirectoryScanner();
             scanner.setBasedir( buildDirectory.getParentFile() );
-            scanner.setIncludes( stubPattern);
+            scanner.setIncludes(stubPattern);
             scanner.scan();
 
             String[] stubs = scanner.getIncludedFiles();
@@ -410,7 +423,7 @@ public class CreateApplicationBundleMojo
 
     private boolean isOsX()
     {
-        return System.getProperty( "mrj.version" ) != null;
+        return System.getProperty("os.name").toLowerCase().indexOf("mac") >= 0;
     }
 
     /**
@@ -646,5 +659,58 @@ public class CreateApplicationBundleMojo
             }
         }
     }
+    
+	private void copyElements() throws MojoExecutionException {
+
+		for (Iterator it = copyElements.iterator(); it.hasNext();) {
+			CopyElement element = (CopyElement) it.next();
+
+			Path source = FileSystems.getDefault().getPath(element.getSource(), new String[0]);
+
+			String destanationDirPath = element.getDestanationDirPath();
+			if (destanationDirPath != null) {
+				destanationDirPath = destanationDirPath.startsWith(File.separator) ? destanationDirPath : File.separator + destanationDirPath;
+				destanationDirPath = destanationDirPath.endsWith(File.separator) ? destanationDirPath : destanationDirPath + File.separator;
+
+				File dirPath = new File(buildDirectory.getAbsolutePath() + destanationDirPath);
+				if (!dirPath.exists())
+					dirPath.mkdirs();
+			}
+
+			if (element.getDestanation() == null) {
+				int idxOfSeparator = element.getSource().lastIndexOf(File.separator);
+				String newDst = element.getSource().substring(idxOfSeparator + 1, element.getSource().length());
+				element.setDestanation(newDst);
+			}
+			
+			Path destanation = FileSystems.getDefault().getPath(buildDirectory.getPath(), new String[]{(destanationDirPath == null ? "" : destanationDirPath) + element.getDestanation()});
+			try {
+				Files.copy(source, destanation, new CopyOption[] { StandardCopyOption.COPY_ATTRIBUTES, LinkOption.NOFOLLOW_LINKS });
+			} catch (IOException e) {
+				throw new MojoExecutionException("Error copying element " + source, e);
+			}
+		}
+	}
+	
+	private void createApplicationSymbolicLink() throws MojoExecutionException {
+		String pathToLink = buildDirectory.getPath() + "/Applications";
+		Path link = FileSystems.getDefault().getPath(pathToLink, new String[0]);
+		Path target = FileSystems.getDefault().getPath("/Applications", new String[0]);
+		try {
+			Files.createSymbolicLink(link, target, new FileAttribute[0]);
+		} catch (IOException e) {
+			throw new MojoExecutionException("Error creating applications symbolic link " + e);
+		}
+	}
+	
+	private void removeApplicationLink() throws MojoExecutionException {
+		String pathToLink = buildDirectory.getPath() + "/Applications";
+		Path link = FileSystems.getDefault().getPath(pathToLink, new String[0]);
+		try {
+			Files.delete(link);
+		} catch (IOException e) {
+			throw new MojoExecutionException("Error deleting applications symbolic link " + e);
+		}
+	}
 
 }
