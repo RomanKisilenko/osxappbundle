@@ -10,7 +10,7 @@
 
   <artifactId>osxappbundle-maven-plugin</artifactId>
   <packaging>maven-plugin</packaging>
-  <version>1.0-alpha-2</version>
+  <version>1.0-SNAPSHOT</version>
   <licenses>
     <license>
       <name>The Apache Software License, Version 2.0</name>
@@ -22,15 +22,15 @@
   <name>Maven OS X Application Bundle Plugin</name>
   <description>A Maven Plugin for generating Mac OS X Application Bundles of Java applications and packaging them as a
     DMG disk image.</description>
-  <url>http://mojo.codehaus.org/osxappbundle-maven-plugin/</url>
+  <url>http://agiliumlabs.com/osxappbundle-maven-plugin/</url>
   <prerequisites>
     <maven>2.0.4</maven>
   </prerequisites>
 
   <scm>
-    <connection>scm:svn:http://svn.codehaus.org/mojo/tags/osxappbundle-maven-plugin-1.0-alpha-2</connection>
-    <developerConnection>scm:svn:https://svn.codehaus.org/mojo/tags/osxappbundle-maven-plugin-1.0-alpha-2</developerConnection>
-    <url>http://fisheye.codehaus.org/browse/mojo/tags/osxappbundle-maven-plugin-1.0-alpha-2</url>
+    <connection>scm:git:https://github.com/AgiliumLabs/osxappbundle.git</connection>
+    <developerConnection>scm:git:https://github.com/AgiliumLabs/osxappbundle.git</developerConnection>
+    <url>https://github.com/AgiliumLabs/osxappbundle</url>
   </scm>
   
   <developers>
@@ -39,9 +39,18 @@
       <name>Eirik Bjorsnos</name>
       <email>eirbjo at gmail com</email>
     </developer>
+    <developer>
+	  <id>pavel</id>
+	  <name>Pavel Sapronov</name>
+	  <email>pavel.sapronov at agilimlabs.com</email>        
+    </developer>
   </developers>
 
   <contributors>
+    <contributor>
+        <name>Roman Kisilenko</name>
+        <email>roman.kisilenko at agiliumlabs.com</email>
+    </contributor>
     <contributor>
       <name>Max Berger</name>
       <email>max at berger dot name</email>

@@ -25,7 +25,7 @@ under the License.
       <question>How do I report bugs, issues or feature requests for this plugin?</question>
       <answer>
         <p>
-          Please report issues in the <a href="http://jira.codehaus.org/browse/MOJO">Mojo Jira</a> instance and set the component to "osxappbundle".
+          Please report issues in the <a href="https://github.com/AgiliumLabs/osxappbundle/issues">github.com issue tracker</a>.
         </p>
       </answer>
     </faq>
