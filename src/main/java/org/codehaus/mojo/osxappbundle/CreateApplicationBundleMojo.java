@@ -217,7 +217,7 @@ public class CreateApplicationBundleMojo
     /**
      * The path to the SetFile tool.
      */
-    private static final String SET_FILE_PATH = "/Developer/Tools/SetFile";
+    private static final String[] SET_FILE_PATH = new String[] {"/Developer/Tools/SetFile", "/usr/bin/SetFile"};
 
 
     /**
@@ -319,13 +319,19 @@ public class CreateApplicationBundleMojo
                 throw new MojoExecutionException( "Error executing " + chmod + " ", e );
             }
 
+            String setFileStr = null;
+            for (String setFilePath : SET_FILE_PATH) {
+            	setFileStr = setFilePath;
+            	if (new File(setFileStr).exists())
+            		break;
+            }
             // This makes sure that the .app dir is actually registered as an application bundle
-            if ( new File( SET_FILE_PATH ).exists() )
+            if ( new File( setFileStr ).exists() )
             {
                 Commandline setFile = new Commandline();
                 try
                 {
-                    setFile.setExecutable(SET_FILE_PATH);
+                    setFile.setExecutable(setFileStr);
                     setFile.createArgument().setValue( "-a B" );
                     setFile.createArgument().setValue( bundleDir.getAbsolutePath() );
 
@@ -667,7 +673,7 @@ public class CreateApplicationBundleMojo
 
 			Path source = FileSystems.getDefault().getPath(element.getSource(), new String[0]);
 
-			String destanationDirPath = element.getDestanationDirPath();
+			String destanationDirPath = element.getDestinationDirPath();
 			if (destanationDirPath != null) {
 				destanationDirPath = destanationDirPath.startsWith(File.separator) ? destanationDirPath : File.separator + destanationDirPath;
 				destanationDirPath = destanationDirPath.endsWith(File.separator) ? destanationDirPath : destanationDirPath + File.separator;
@@ -677,13 +683,13 @@ public class CreateApplicationBundleMojo
 					dirPath.mkdirs();
 			}
 
-			if (element.getDestanation() == null) {
+			if (element.getDestination() == null) {
 				int idxOfSeparator = element.getSource().lastIndexOf(File.separator);
 				String newDst = element.getSource().substring(idxOfSeparator + 1, element.getSource().length());
-				element.setDestanation(newDst);
+				element.setDestination(newDst);
 			}
 			
-			Path destanation = FileSystems.getDefault().getPath(buildDirectory.getPath(), new String[]{(destanationDirPath == null ? "" : destanationDirPath) + element.getDestanation()});
+			Path destanation = FileSystems.getDefault().getPath(buildDirectory.getPath(), new String[]{(destanationDirPath == null ? "" : destanationDirPath) + element.getDestination()});
 			try {
 				Files.copy(source, destanation, new CopyOption[] { StandardCopyOption.COPY_ATTRIBUTES, LinkOption.NOFOLLOW_LINKS });
 			} catch (IOException e) {

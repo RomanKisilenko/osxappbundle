@@ -3,8 +3,8 @@ package org.codehaus.mojo.osxappbundle;
 public class CopyElement {
 
 	private String source;
-	private String destanation;
-	private String destanationDirPath;
+	private String destination;
+	private String destinationDirPath;
 
 	public String getSource() {
 		return source;
@@ -14,20 +14,20 @@ public class CopyElement {
 		this.source = source;
 	}
 
-	public String getDestanation() {
-		return destanation;
+	public String getDestination() {
+		return destination;
 	}
 
-	public void setDestanation(String destanation) {
-		this.destanation = destanation;
+	public void setDestination(String destination) {
+		this.destination = destination;
 	}
 
-	public String getDestanationDirPath() {
-		return destanationDirPath;
+	public String getDestinationDirPath() {
+		return destinationDirPath;
 	}
 
-	public void setDestanationDirPath(String destanationDirPath) {
-		this.destanationDirPath = destanationDirPath;
+	public void setDestinationDirPath(String destinationDirPath) {
+		this.destinationDirPath = destinationDirPath;
 	}
 
 }
